@@ -1,10 +1,16 @@
 import * as express from "express";
 import { collections } from "./database";
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs'; // Corrected the spelling of 'bcryptjs'
+import bcrypt from 'bcryptjs';
 
 export const authRouter = express.Router();
 authRouter.use(express.json());
+
+// Ensure collections.users is defined before proceeding
+const usersCollection = collections.users;
+if (!usersCollection) {
+    throw new Error("Database not initialized properly - users collection is undefined");
+}
 
 // User Registration
 authRouter.post("/register", async (req, res) => {
@@ -18,16 +24,23 @@ authRouter.post("/register", async (req, res) => {
             role,
             email,
             passwordHash: hashedPassword, // Use passwordHash instead of password
-            assignedlocations: assignedlocations,
-            assignedzones: assignedzones,
+            assignedlocations,
+            assignedzones,
         };
 
-        const result = await collections.users.insertOne(newUser);
+        const result = await usersCollection.insertOne(newUser);
+        if (!result) {
+            return res.status(500).send('Failed to create user');
+        }
         // Inside your /register route
         res.status(201).json({ message: `User created with ID: ${result.insertedId}` });
 
-    } catch (error) {
-        res.status(500).send(error.message);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).send(error.message);
+        } else {
+            res.status(500).send('An unknown error occurred');
+        }
     }
 });
 
@@ -35,7 +48,7 @@ authRouter.post("/register", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await collections.users.findOne({ email });
+        const user = await usersCollection.findOne({ email });
 
         if (user && await bcrypt.compare(password, user.passwordHash)) {
             // Generate and send token
@@ -44,11 +57,14 @@ authRouter.post("/login", async (req, res) => {
         } else {
             res.status(400).send("Invalid email or password");
         }
-    } catch (error) {
-        res.status(500).send(error.message);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            res.status(500).send(error.message);
+        } else {
+            res.status(500).send('An unknown error occurred');
+        }
     }
 });
-
 
 // Additional routes can be added here if needed
 
