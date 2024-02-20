@@ -24,7 +24,7 @@ authRouter.post("/register", async (req, res) => {
             assignedzones,
         };
 
-        const result = await usersCollection.insertOne(newUser);
+        const result = await collections.users?.insertOne(newUser);
         if (!result) {
             return res.status(500).send('Failed to create user');
         }
@@ -44,7 +44,7 @@ authRouter.post("/register", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await usersCollection.findOne({ email });
+        const user = await collections.users?.findOne({ email });
 
         if (user && await bcrypt.compare(password, user.passwordHash)) {
             // Generate and send token
