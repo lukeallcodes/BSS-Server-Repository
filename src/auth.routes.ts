@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'; // Corrected the spelling of 'bcryptjs'
 
 export const authRouter = express.Router();
 authRouter.use(express.json());
-
+if(collection.users){
 // User Registration
 authRouter.post("/register", async (req, res) => {
     try {
@@ -22,7 +22,7 @@ authRouter.post("/register", async (req, res) => {
             assignedzones: assignedzones,
         };
 
-        const result = await collections.users.insertOne(newUser);
+        const result = await collections.users?.insertOne(newUser);
         // Inside your /register route
         res.status(201).json({ message: `User created with ID: ${result.insertedId}` });
 
@@ -35,7 +35,7 @@ authRouter.post("/register", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await collections.users.findOne({ email });
+        const user = await collections.users?.findOne({ email });
 
         if (user && await bcrypt.compare(password, user.passwordHash)) {
             // Generate and send token
@@ -51,5 +51,6 @@ authRouter.post("/login", async (req, res) => {
 
 
 // Additional routes can be added here if needed
-
+}
 export default authRouter;
+    
