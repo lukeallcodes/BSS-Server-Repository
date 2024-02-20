@@ -6,7 +6,7 @@ import QRCode from 'qrcode';
 
 export const clientRouter = express.Router();
 clientRouter.use(express.json());
-
+if(collections.clients){
 // Get all clients
 clientRouter.get("/", async (_req, res) => {
     if (!collections.clients) {
@@ -15,7 +15,7 @@ clientRouter.get("/", async (_req, res) => {
     }
 
     try {
-        const clients = await collections.clients.find({}).toArray();
+        const clients = await collections.clients?.find({}).toArray();
         console.log("Get all clients:", clients);
         res.status(200).send(clients);
     } catch (error) {
@@ -34,7 +34,7 @@ clientRouter.get("/:id", async (req, res) => {
     try {
         const id = req.params.id;
         const query = { _id: new mongodb.ObjectId(id) };
-        const client = await collections.clients.aggregate([
+        const client = await collections.clients?.aggregate([
             { $match: query }
         ]).toArray();
 
@@ -178,3 +178,4 @@ clientRouter.post("/check-in", async (req, res) => {
         res.status(500).send((error as Error).message);
     }
 });
+}
