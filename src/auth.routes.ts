@@ -7,10 +7,6 @@ export const authRouter = express.Router();
 authRouter.use(express.json());
 
 // Ensure collections.users is defined before proceeding
-const usersCollection = collections.users;
-if (!usersCollection) {
-    throw new Error("Database not initialized properly - users collection is undefined");
-}
 
 // User Registration
 authRouter.post("/register", async (req, res) => {
