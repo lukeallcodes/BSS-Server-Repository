@@ -17,7 +17,7 @@ userRouter.get('/:id', async (req, res) => {
     }
 
     try {
-        const user = await collections.users.findOne({ _id: new ObjectId(userId) });
+        const user = await collections.users?.findOne({ _id: new ObjectId(userId) });
         
         if (!user) {
             res.status(404).json({ message: "User not found" });
@@ -41,7 +41,7 @@ userRouter.post('/', async (req, res) => {
 
         // Create the user with the hashed password
         const newUser = { firstname, lastname, role, email, passwordHash: hashedPassword,assignedlocations: assignedlocations, assignedzones: assignedzones, clientid: clientid };
-        const result = await collections.users.insertOne(newUser);
+        const result = await collections.users?.insertOne(newUser);
 
         if (result.acknowledged) {
             res.status(201).json({ _id: result.insertedId, message: "User created successfully" });
@@ -58,7 +58,7 @@ userRouter.post('/fetchByIds', async (req, res) => {
     try {
         const { ids } = req.body; // Expect an array of user IDs
         const objectIds = ids.map((id: string | number | ObjectId | ObjectIdLike | Uint8Array) => new ObjectId(id)); // Convert string IDs to ObjectId
-        const users = await collections.users.find({ _id: { $in: objectIds }}).toArray();
+        const users = await collections.users?.find({ _id: { $in: objectIds }}).toArray();
 
         res.status(200).json(users);
     } catch (error) {
@@ -76,7 +76,7 @@ userRouter.put('/:id', async (req, res) => {
 
         // Optional: Validate input data
 
-        const updateResult = await collections.users.updateOne({ _id: new ObjectId(userId) }, { $set: { firstname, lastname, role, email, assignedlocations, assignedzones }});
+        const updateResult = await collections.users?.updateOne({ _id: new ObjectId(userId) }, { $set: { firstname, lastname, role, email, assignedlocations, assignedzones }});
 
         if (updateResult.matchedCount === 0) {
             res.status(404).json({ error: "User not found" });
@@ -94,7 +94,7 @@ userRouter.delete('/:id', async (req, res) => {
     try {
         const userId = req.params.id;
 
-        const deleteResult = await collections.users.deleteOne({ _id: new ObjectId(userId) });
+        const deleteResult = await collections.users?.deleteOne({ _id: new ObjectId(userId) });
 
         if (deleteResult.deletedCount === 0) {
             res.status(404).json({ error: "User not found" });
