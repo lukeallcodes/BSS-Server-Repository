@@ -3,17 +3,20 @@ import * as bcrypt from "bcryptjs";
 import { collections } from "./database";
 import { ObjectId } from "mongodb";
 import { ObjectIdLike } from "bson";
-export const userRouter = express.Router();
+
+const userRouter = express.Router();
 
 userRouter.use(express.json());
 
 userRouter.get('/:id', async (req, res) => {
     const userId = req.params.id;
-    
-    // Validate the userId to ensure it's a 24-character hex string
     const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(userId);
     if (!isValidObjectId) {
         return res.status(400).json({ error: "Invalid user ID format. User ID must be a 24 character hex string." });
+    }
+
+    if (!collections.users) {
+        return res.status(500).json({ error: "User collection not initialized." });
     }
 
     try {
@@ -30,17 +33,15 @@ userRouter.get('/:id', async (req, res) => {
     }
 });
 
-
-// Create a new user
 userRouter.post('/', async (req, res) => {
+    if (!collections.users) {
+        return res.status(500).json({ error: "User collection not initialized." });
+    }
+
     try {
         const { firstname, lastname, role, email, passwordHash, assignedlocations, assignedzones, clientid } = req.body;
-
-        // Hash the raw password
-        const hashedPassword = await bcrypt.hash(passwordHash, 8); // Adjust the salt rounds as needed
-
-        // Create the user with the hashed password
-        const newUser = { firstname, lastname, role, email, passwordHash: hashedPassword,assignedlocations: assignedlocations, assignedzones: assignedzones, clientid: clientid };
+        const hashedPassword = await bcrypt.hash(passwordHash, 8);
+        const newUser = { firstname, lastname, role, email, passwordHash: hashedPassword, assignedlocations, assignedzones, clientid };
         const result = await collections.users.insertOne(newUser);
 
         if (result.acknowledged) {
@@ -55,9 +56,13 @@ userRouter.post('/', async (req, res) => {
 });
 
 userRouter.post('/fetchByIds', async (req, res) => {
+    if (!collections.users) {
+        return res.status(500).json({ error: "User collection not initialized." });
+    }
+
     try {
-        const { ids } = req.body; // Expect an array of user IDs
-        const objectIds = ids.map((id: string | number | ObjectId | ObjectIdLike | Uint8Array) => new ObjectId(id)); // Convert string IDs to ObjectId
+        const { ids } = req.body;
+        const objectIds = ids.map((id: string | number | ObjectId | ObjectIdLike | Uint8Array) => new ObjectId(id));
         const users = await collections.users.find({ _id: { $in: objectIds }}).toArray();
 
         res.status(200).json(users);
@@ -67,15 +72,14 @@ userRouter.post('/fetchByIds', async (req, res) => {
     }
 });
 
-
-// Update a user
 userRouter.put('/:id', async (req, res) => {
+    if (!collections.users) {
+        return res.status(500).json({ error: "User collection not initialized." });
+    }
+
     try {
         const userId = req.params.id;
         const { firstname, lastname, role, email, assignedlocations, assignedzones } = req.body;
-
-        // Optional: Validate input data
-
         const updateResult = await collections.users.updateOne({ _id: new ObjectId(userId) }, { $set: { firstname, lastname, role, email, assignedlocations, assignedzones }});
 
         if (updateResult.matchedCount === 0) {
@@ -89,11 +93,13 @@ userRouter.put('/:id', async (req, res) => {
     }
 });
 
-// Delete a user
 userRouter.delete('/:id', async (req, res) => {
+    if (!collections.users) {
+        return res.status(500).json({ error: "User collection not initialized." });
+    }
+
     try {
         const userId = req.params.id;
-
         const deleteResult = await collections.users.deleteOne({ _id: new ObjectId(userId) });
 
         if (deleteResult.deletedCount === 0) {
@@ -106,6 +112,5 @@ userRouter.delete('/:id', async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
-
 
 export default userRouter;
