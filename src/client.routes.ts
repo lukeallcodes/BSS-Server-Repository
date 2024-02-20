@@ -9,19 +9,28 @@ clientRouter.use(express.json());
 
 // Get all clients
 clientRouter.get("/", async (_req, res) => {
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
+
     try {
         const clients = await collections.clients.find({}).toArray();
-        console.log("Get all clients:", clients); // Add this logging statement
+        console.log("Get all clients:", clients);
         res.status(200).send(clients);
     } catch (error) {
-        console.error("Error while getting all clients:", error); // Add this logging statement
-        res.status(500).send(error.message);
+        console.error("Error while getting all clients:", (error as Error).message);
+        res.status(500).send((error as Error).message);
     }
 });
 
 // Get a single client by ID
-// Inside clientRouter.get("/:id")
 clientRouter.get("/:id", async (req, res) => {
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
+
     try {
         const id = req.params.id;
         const query = { _id: new mongodb.ObjectId(id) };
@@ -35,18 +44,22 @@ clientRouter.get("/:id", async (req, res) => {
             res.status(404).send(`Failed to find a client with ID ${id}`);
         }
     } catch (error) {
-        console.error("Error while getting client by ID:", error);
-        res.status(500).send(error.message);
+        console.error("Error while getting client by ID:", (error as Error).message);
+        res.status(500).send((error as Error).message);
     }
 });
 
 clientRouter.post("/", async (req, res) => {
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
+
     try {
         const { clientname } = req.body;
-        // Initialize userRefs as an empty array when creating a new client
         const client: Partial<Client> = {
             clientname,
-            userRefs: [] // Ensure userRefs is initialized as an empty array
+            userRefs: [] 
         };
 
         const result = await collections.clients.insertOne(client as Client);
@@ -59,27 +72,27 @@ clientRouter.post("/", async (req, res) => {
             res.status(500).send("Failed to create a new client.");
         }
     } catch (error) {
-        console.error("Error while creating a new client:", error);
-        res.status(400).send(error.message);
+        console.error("Error while creating a new client:", (error as Error).message);
+        res.status(400).send((error as Error).message);
     }
 });
 
-
 clientRouter.put("/:id", async (req, res) => {
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
+
     try {
         const id = req.params.id;
         let clientData = req.body;
 
-        // Remove the _id field from clientData to avoid modifying it directly
         delete clientData._id;
 
-        // Convert userRefs to an array of MongoDB ObjectIDs if provided
         if (clientData.userRefs && Array.isArray(clientData.userRefs)) {
             clientData.userRefs = clientData.userRefs.map((userId: string | number | mongodb.BSON.ObjectId | mongodb.BSON.ObjectIdLike | Uint8Array) => new mongodb.ObjectId(userId));
         }
-        
-        // Ensure each location has an _id, initializing it if necessary
-        // Also, initialize QR codes for zones without one
+
         if (clientData.location && Array.isArray(clientData.location)) {
             for (const location of clientData.location) {
                 if (!location._id) {
@@ -90,9 +103,7 @@ clientRouter.put("/:id", async (req, res) => {
                         if (!zone._id) {
                             zone._id = new mongodb.ObjectId();
                         }
-                        // Generate QR code if it doesn't exist
                         if (!zone.qrcode) {
-                            // Assuming you want to store the zone ID in the QR code
                             zone.qrcode = await QRCode.toDataURL(zone._id.toString());
                         }
                     }
@@ -116,19 +127,23 @@ clientRouter.put("/:id", async (req, res) => {
             res.status(500).send(`Failed to update client with ID ${id}.`);
         }
     } catch (error) {
-        console.error("Error while updating client:", error);
-        res.status(400).send(error.message);
+        console.error("Error while updating client:", (error as Error).message);
+        res.status(400).send((error as Error).message);
     }
 });
 
-
 // Delete a client by ID
 clientRouter.delete("/:id", async (req, res) => {
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
+
     try {
         const id = req.params.id;
         const query = { _id: new mongodb.ObjectId(id) };
         const result = await collections.clients.deleteOne(query);
-        console.log("Delete result:", result); // Add this logging statement
+        console.log("Delete result:", result);
 
         if (result && result.deletedCount) {
             res.status(202).send(`Removed client with ID ${id}`);
@@ -138,26 +153,28 @@ clientRouter.delete("/:id", async (req, res) => {
             res.status(400).send(`Failed to remove client with ID ${id}`);
         }
     } catch (error) {
-        console.error("Error while deleting client:", error); // Add this logging statement
-        res.status(400).send(error.message);
+        console.error("Error while deleting client:", (error as Error).message);
+        res.status(400).send((error as Error).message);
     }
 });
 
 clientRouter.post("/check-in", async (req, res) => {
-    const { zoneId, userId } = req.body;
-    const now = new Date();
+    if (!collections.clients) {
+        console.error("Database connection not established. `collections.clients` is undefined.");
+        return res.status(500).send("Server error: Database connection not established.");
+    }
 
     try {
-        // Find the zone and update check-in time
+        const { zoneId, userId } = req.body;
+        const now = new Date();
+
         const zoneQuery = { _id: new mongodb.ObjectId(zoneId) };
         const update = { $set: { "zone.$.lastcheckin": now.toISOString() } };
         await collections.clients.updateOne(zoneQuery, update);
 
         res.status(200).send("Check-in recorded");
     } catch (error) {
-        console.error("Error while recording check-in:", error);
-        res.status(500).send(error.message);
+        console.error("Error while recording check-in:", (error as Error).message);
+        res.status(500).send((error as Error).message);
     }
 });
-
-// New route for check-out

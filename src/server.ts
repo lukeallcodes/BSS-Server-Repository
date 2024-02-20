@@ -28,7 +28,7 @@ connectToDatabase(ATLAS_URI)
         app.use("/clients", clientRouter); // Apply the validateJWT middleware to client routes
         app.use("/users", userRouter);
         // start the Express server
-        app.listen(5200, () => {
+        app.listen(5200, '0.0.0.0',() => {
             console.log(`Server running at http://localhost:5200...`);
         });
     })
